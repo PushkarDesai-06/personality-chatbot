@@ -3,6 +3,7 @@
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { personas } from "@/lib/personas";
+import ReactMarkdown from "react-markdown";
 
 type ChatMessage = {
   id: string;
@@ -12,6 +13,9 @@ type ChatMessage = {
 };
 
 const storageKey = (personaId: string) => `persona-chat:${personaId}`;
+
+const hasMarkdown = (text: string) =>
+  /(^|\n)#{1,6}\s|\*\*[^*]+\*\*|`[^`]+`|```/.test(text);
 
 const formatTime = (isoTime: string) =>
   new Date(isoTime).toLocaleTimeString([], {
@@ -308,7 +312,57 @@ export default function Home() {
                             : "bg-chat-bubble text-chat-ink"
                       }`}
                     >
-                      {message.content}
+                      {message.role === "assistant" &&
+                      hasMarkdown(message.content) ? (
+                        <ReactMarkdown
+                          className="space-y-2 text-sm leading-6"
+                          components={{
+                            h1: ({ children }) => (
+                              <h1 className="text-base font-semibold">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-sm font-semibold">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-sm font-semibold">
+                                {children}
+                              </h3>
+                            ),
+                            p: ({ children }) => (
+                              <p className="whitespace-pre-wrap">{children}</p>
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="overflow-x-auto rounded bg-black/5 p-3 text-xs">
+                                {children}
+                              </pre>
+                            ),
+                            code: ({ children, className }) => (
+                              <code
+                                className={
+                                  className
+                                    ? "font-mono text-xs"
+                                    : "rounded bg-black/5 px-1 py-0.5 font-mono text-xs"
+                                }
+                              >
+                                {children}
+                              </code>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold">
+                                {children}
+                              </strong>
+                            ),
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      )}
                     </div>
                     <span className="text-xs text-chat-muted">
                       {formatTime(message.createdAt)}
@@ -352,24 +406,25 @@ export default function Home() {
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-chat-ink px-6 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 sm:w-12 sm:px-0"
               >
                 <span className="sr-only">Send</span>
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 11l17-7-7 17-2-7-8-3z" />
-                  <path d="M11 13l6-6" />
-                </svg>
+                {!isLoading ? (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 11l17-7-7 17-2-7-8-3z" />
+                    <path d="M11 13l6-6" />
+                  </svg>
+                ) : (
+                  <div className="">...</div>
+                )}
                 <span className="sm:hidden">
                   {isLoading ? "Sending" : "Send"}
-                </span>
-                <span className="hidden text-xs sm:inline">
-                  {isLoading ? "..." : ""}
                 </span>
               </button>
             </div>
