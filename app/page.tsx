@@ -26,6 +26,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const skipNextSaveRef = useRef(false);
+  const personaMenuRef = useRef<HTMLDivElement | null>(null);
+  const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
 
   const activePersona = useMemo(
     () =>
@@ -38,6 +40,19 @@ export default function Home() {
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!isPersonaMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (personaMenuRef.current?.contains(target)) return;
+      setIsPersonaMenuOpen(false);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [isPersonaMenuOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -75,6 +90,7 @@ export default function Home() {
 
   const handlePersonaChange = (personaId: (typeof personas)[number]["id"]) => {
     setActivePersonaId(personaId);
+    setIsPersonaMenuOpen(false);
   };
 
   const handleClearChat = () => {
@@ -157,47 +173,88 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-chat-surface text-chat-ink">
       <header className="border-b border-black/10 bg-white/70 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between relative">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
               Active persona
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
               {activePersona.name}
             </h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {personas.map((persona) => {
-              const isActive = persona.id === activePersonaId;
-              return (
-                <button
-                  key={persona.id}
-                  type="button"
-                  onClick={() => handlePersonaChange(persona.id)}
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    isActive
-                      ? "border-chat-ink bg-chat-ink text-white"
-                      : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
-                  }`}
+            <div className="relative mt-3" ref={personaMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsPersonaMenuOpen((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-full border border-chat-ink bg-chat-ink px-4 py-2 text-base text-white transition"
+                aria-haspopup="listbox"
+                aria-expanded={isPersonaMenuOpen}
+              >
+                {activePersona.name}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {persona.name}
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={handleClearChat}
-              disabled={messages.length === 0 || isLoading}
-              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-chat-muted transition hover:border-black/30 hover:text-chat-ink disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Clear chat
-            </button>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {isPersonaMenuOpen ? (
+                <div className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg">
+                  {personas.map((persona) => {
+                    const isActive = persona.id === activePersonaId;
+                    return (
+                      <button
+                        key={persona.id}
+                        type="button"
+                        onClick={() => handlePersonaChange(persona.id)}
+                        className={`flex w-full items-center justify-between rounded-full border px-4 py-2 text-base transition ${
+                          isActive
+                            ? "border-chat-ink bg-chat-ink text-white"
+                            : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
+                        }`}
+                      >
+                        {persona.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={handleClearChat}
+            disabled={messages.length === 0 || isLoading}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red/10 bg-red-200 text-red-600 transition hover:border-red-700 hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 absolute right-6 top-5 sm:static sm:ml-auto"
+          >
+            <span className="sr-only">Clear chat</span>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 7h16" />
+              <path d="M9 7V5h6v2" />
+              <path d="M7 7l1 12h8l1-12" />
+              <path d="M10 11v5" />
+              <path d="M14 11v5" />
+            </svg>
+          </button>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pb-10 pt-6">
-        <section className="rounded-3xl border border-black/10 bg-white/80 px-5 py-4">
+        {/* <section className="rounded-3xl border border-black/10 bg-white/80 px-5 py-4">
           <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
             Suggestions
           </p>
@@ -219,7 +276,7 @@ export default function Home() {
               ))}
             </div>
           )}
-        </section>
+        </section> */}
 
         <section className="flex min-h-[55vh] flex-1 flex-col rounded-3xl border border-black/10 bg-white/80">
           <div
@@ -277,7 +334,7 @@ export default function Home() {
               handleSend();
             }}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <label className="flex-1">
                 <span className="sr-only">Message</span>
                 <textarea
@@ -292,12 +349,31 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="inline-flex h-12 items-center justify-center rounded-full bg-chat-ink px-6 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-chat-ink px-6 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-40 sm:w-12 sm:px-0"
               >
-                {isLoading ? "Sending..." : "Send"}
+                <span className="sr-only">Send</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 11l17-7-7 17-2-7-8-3z" />
+                  <path d="M11 13l6-6" />
+                </svg>
+                <span className="sm:hidden">
+                  {isLoading ? "Sending" : "Send"}
+                </span>
+                <span className="hidden text-xs sm:inline">
+                  {isLoading ? "..." : ""}
+                </span>
               </button>
             </div>
-            <p className="mt-3 text-xs text-chat-muted">
+            <p className="mt-3 hidden text-xs text-chat-muted sm:block">
               Press Enter to send, Shift + Enter for a new line.
             </p>
           </form>
