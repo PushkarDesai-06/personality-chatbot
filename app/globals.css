@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --chat-surface: #f6f1ea;
+  --chat-ink: #1b1a17;
+  --chat-muted: #7b7265;
+  --chat-bubble: #fdfbf8;
+}
+
+@theme inline {
+  --color-chat-surface: var(--chat-surface);
+  --color-chat-ink: var(--chat-ink);
+  --color-chat-muted: var(--chat-muted);
+  --color-chat-bubble: var(--chat-bubble);
+  --font-sans: var(--font-manrope);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: radial-gradient(
+      1200px circle at 20% -10%,
+      rgba(255, 255, 255, 0.9),
+      transparent 55%
+    ),
+    radial-gradient(
+      800px circle at 80% 10%,
+      rgba(255, 245, 230, 0.7),
+      transparent 50%
+    ),
+    var(--chat-surface);
+  color: var(--chat-ink);
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+.typing-dots::before {
+  content: "";
+  display: inline-block;
+  width: 24px;
+  height: 6px;
+  background: radial-gradient(circle, currentColor 3px, transparent 4px) 0 0 /
+      12px 6px,
+    radial-gradient(circle, currentColor 3px, transparent 4px) 6px 0 / 12px 6px,
+    radial-gradient(circle, currentColor 3px, transparent 4px) 12px 0 / 12px 6px;
+  animation: typing 1.3s infinite ease-in-out;
+}
+
+@keyframes typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
