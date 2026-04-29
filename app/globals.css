@@ -17,17 +17,18 @@
 }
 
 body {
-  background: radial-gradient(
-      1200px circle at 20% -10%,
-      rgba(255, 255, 255, 0.9),
-      transparent 55%
+  background: linear-gradient(
+      rgba(27, 26, 23, 0.06) 1px,
+      transparent 1px
     ),
-    radial-gradient(
-      800px circle at 80% 10%,
-      rgba(255, 245, 230, 0.7),
-      transparent 50%
+    linear-gradient(
+      90deg,
+      rgba(27, 26, 23, 0.06) 1px,
+      transparent 1px
     ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 55%),
     var(--chat-surface);
+  background-size: 64px 64px, 64px 64px, auto, auto;
   color: var(--chat-ink);
   font-family: var(--font-sans), "Segoe UI", sans-serif;
 }

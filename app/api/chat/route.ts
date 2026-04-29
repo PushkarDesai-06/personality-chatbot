@@ -10,12 +10,40 @@ type ChatRequestBody = {
   messages?: ClientMessage[];
 };
 
+const classifyReason = (message: string | undefined, status: number) => {
+  const text = message?.toLowerCase() ?? "";
+
+  if (
+    status === 429 ||
+    text.includes("quota") ||
+    text.includes("resource_exhausted")
+  ) {
+    return "Quota exceeded";
+  }
+
+  if (
+    status === 503 ||
+    text.includes("overloaded") ||
+    text.includes("unavailable") ||
+    text.includes("busy")
+  ) {
+    return "Model congested";
+  }
+
+  if (status >= 400 && status < 500) {
+    return "Bad request";
+  }
+
+  return "Server error";
+};
+
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
+    console.error("Missing GEMINI_API_KEY environment variable.");
     return Response.json(
-      { error: "Missing GEMINI_API_KEY environment variable." },
+      { error: "Request failed", reason: "Configuration error" },
       { status: 500 },
     );
   }
@@ -24,14 +52,22 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as ChatRequestBody;
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    console.error("Invalid JSON body.");
+    return Response.json(
+      { error: "Request failed", reason: "Bad request" },
+      { status: 400 },
+    );
   }
 
   const personaId = body.personaId ?? "";
   const persona = personas.find((item) => item.id === personaId);
 
   if (!persona) {
-    return Response.json({ error: "Unknown persona." }, { status: 400 });
+    console.error("Unknown persona.");
+    return Response.json(
+      { error: "Request failed", reason: "Bad request" },
+      { status: 400 },
+    );
   }
 
   const inputMessages = Array.isArray(body.messages) ? body.messages : [];
@@ -49,7 +85,11 @@ export async function POST(request: Request) {
     .filter((message) => message.content.length > 0);
 
   if (sanitizedMessages.length === 0) {
-    return Response.json({ error: "Message list is empty." }, { status: 400 });
+    console.error("Message list is empty.");
+    return Response.json(
+      { error: "Request failed", reason: "Bad request" },
+      { status: 400 },
+    );
   }
 
   const contents = sanitizedMessages.map((message) => ({
@@ -67,7 +107,8 @@ export async function POST(request: Request) {
     };
   }
 
-  const model = "gemini-3-flash-preview";
+  //! MODEL ID HERE
+  const model = "gemini-2.5-flash";
   const endpoint =
     "https://generativelanguage.googleapis.com/v1beta/models/" +
     `${model}:generateContent?key=${apiKey}`;
@@ -80,9 +121,10 @@ export async function POST(request: Request) {
       body: JSON.stringify(payload),
       cache: "no-store",
     });
-  } catch {
+  } catch (error) {
+    console.error("Failed to reach the Gemini API.", error);
     return Response.json(
-      { error: "Failed to reach the Gemini API." },
+      { error: "Request failed", reason: "Network error" },
       { status: 502 },
     );
   }
@@ -90,9 +132,10 @@ export async function POST(request: Request) {
   let data: unknown;
   try {
     data = await response.json();
-  } catch {
+  } catch (error) {
+    console.error("Unexpected response from Gemini API.", error);
     return Response.json(
-      { error: "Unexpected response from Gemini API." },
+      { error: "Request failed", reason: "Server error" },
       { status: 502 },
     );
   }
@@ -104,7 +147,18 @@ export async function POST(request: Request) {
         ? (data as { error?: { message?: string } }).error?.message
         : "Gemini API returned an error.";
 
-    return Response.json({ error: message }, { status: response.status });
+    console.error("Gemini API error.", {
+      status: response.status,
+      message,
+      data,
+    });
+
+    const reason = classifyReason(message, response.status);
+
+    return Response.json(
+      { error: "Request failed", reason },
+      { status: response.status },
+    );
   }
 
   const candidateText =
@@ -119,8 +173,9 @@ export async function POST(request: Request) {
   const text = candidateText.trim();
 
   if (!text) {
+    console.error("Gemini API returned an empty response.");
     return Response.json(
-      { error: "Gemini API returned an empty response." },
+      { error: "Request failed", reason: "Server error" },
       { status: 502 },
     );
   }

@@ -136,10 +136,22 @@ export default function Home() {
       const data = (await response.json()) as {
         message?: string;
         error?: string;
+        reason?: string;
       };
 
       if (!response.ok) {
-        throw new Error(data.error || "Request failed.");
+        const errorLabel =
+          typeof data.error === "string" ? data.error : "Request failed";
+        const reason =
+          typeof data.reason === "string" ? data.reason : "Unknown";
+        const message = reason ? `${errorLabel}: ${reason}` : errorLabel;
+
+        console.error("Chat request failed.", {
+          status: response.status,
+          error: data,
+        });
+
+        throw new Error(message);
       }
 
       const assistantMessage: ChatMessage = {
@@ -151,13 +163,16 @@ export default function Home() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      console.error("Chat request error.", error);
+      const message =
+        error instanceof Error && error.message.startsWith("Request failed")
+          ? error.message
+          : "Request failed: Network error";
+
       const errorMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "error",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Something went wrong. Please try again.",
+        content: message,
         createdAt: new Date().toISOString(),
       };
 
@@ -175,7 +190,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-chat-surface text-chat-ink">
+    <div className="flex min-h-screen flex-col bg-transparent text-chat-ink">
       <header className="border-b border-black/10 bg-white/70 backdrop-blur">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between relative">
           <div>
