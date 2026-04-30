@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { personas } from "@/lib/personas";
 import ReactMarkdown from "react-markdown";
+import { AnimatePresence, motion } from "framer-motion";
 
 type ChatMessage = {
   id: string;
@@ -32,6 +33,20 @@ export default function Home() {
   const skipNextSaveRef = useRef(false);
   const personaMenuRef = useRef<HTMLDivElement | null>(null);
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
+
+  const suggestionsContainerMotion = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { delayChildren: 0.06, staggerChildren: 0.08 },
+    },
+  } as const;
+
+  const suggestionItemMotion = {
+    hidden: { opacity: 0, y: 4 },
+    show: { opacity: 1, y: 0 },
+  } as const;
 
   const activePersona = useMemo(
     () =>
@@ -191,7 +206,12 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col bg-transparent text-chat-ink">
-      <header className="border-b border-black/10 bg-white/70 backdrop-blur">
+      <motion.header
+        className="border-b border-black/10 bg-white/70 backdrop-blur"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between relative">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
@@ -270,34 +290,83 @@ export default function Home() {
             </svg>
           </button>
         </div>
-      </header>
+      </motion.header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-0 pb-10 pt-6 sm:px-6">
-        {/* <section className="rounded-3xl border border-black/10 bg-white/80 px-5 py-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
-            Suggestions
-          </p>
-          {activePersona.suggestions.length === 0 ? (
-            <p className="mt-2 text-sm text-chat-muted">
-              Suggestions will appear here once you add them.
+        <section className="w-full rounded-none border border-black/10 bg-white/80 px-5 py-4 sm:rounded-3xl">
+          <div className="flex items-center justify-between">
+            <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
+              Suggestions
             </p>
-          ) : (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {activePersona.suggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  onClick={() => setInput(suggestion)}
-                  className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-chat-ink transition hover:border-black/30"
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          )}
-        </section> */}
+            <button
+              type="button"
+              onClick={() => setIsSuggestionsOpen((prev) => !prev)}
+              className="inline-flex items-center gap-2 text-xs font-medium text-chat-muted transition hover:text-chat-ink"
+              aria-expanded={isSuggestionsOpen}
+            >
+              {isSuggestionsOpen ? "Collapse" : "Expand"}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className={`h-4 w-4 transition ${
+                  isSuggestionsOpen ? "rotate-180" : "rotate-0"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
+          <AnimatePresence>
+            {isSuggestionsOpen ? (
+              <motion.div
+                key="suggestions"
+                className="overflow-hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.35, ease: "easeInOut" }}
+              >
+                {activePersona.suggestions.length === 0 ? (
+                  <p className="mt-2 text-sm text-chat-muted">
+                    Suggestions will appear here once you add them.
+                  </p>
+                ) : (
+                  <motion.div
+                    className="mt-3 flex flex-wrap gap-2"
+                    variants={suggestionsContainerMotion}
+                    initial="hidden"
+                    animate="show"
+                  >
+                    {activePersona.suggestions.map((suggestion) => (
+                      <motion.button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setInput(suggestion)}
+                        className="max-w-full rounded-full border border-black/10 bg-white px-4 py-2 text-sm text-chat-ink transition hover:border-black/30 sm:max-w-[240px]"
+                        title={suggestion}
+                        variants={suggestionItemMotion}
+                      >
+                        <span className="block truncate">{suggestion}</span>
+                      </motion.button>
+                    ))}
+                  </motion.div>
+                )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </section>
 
-        <section className="flex min-h-[55vh] w-full flex-1 flex-col rounded-none border border-black/10 bg-white/80 sm:rounded-3xl">
+        <motion.section
+          className="flex min-h-[55vh] w-full flex-1 flex-col rounded-none border border-black/10 bg-white/80 sm:rounded-3xl"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
+        >
           <div
             ref={transcriptRef}
             className="flex-1 space-y-6 overflow-y-auto px-5 py-6"
@@ -307,84 +376,94 @@ export default function Home() {
                 Start a conversation with {activePersona.name}.
               </div>
             ) : (
-              messages.map((message) => {
-                const isUser = message.role === "user";
-                const isError = message.role === "error";
+              <AnimatePresence initial={false}>
+                {messages.map((message) => {
+                  const isUser = message.role === "user";
+                  const isError = message.role === "error";
 
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex flex-col gap-1 ${
-                      isUser ? "items-end" : "items-start"
-                    }`}
-                  >
-                    <div
-                      className={`sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm max-w-full ${
-                        isUser
-                          ? "bg-chat-ink text-white"
-                          : isError
-                            ? "border border-red-200 bg-red-50 text-red-700"
-                            : "bg-chat-bubble text-chat-ink"
+                  return (
+                    <motion.div
+                      key={message.id}
+                      className={`flex flex-col gap-1 ${
+                        isUser ? "items-end" : "items-start"
                       }`}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                      {message.role === "assistant" &&
-                      hasMarkdown(message.content) ? (
-                        <ReactMarkdown
-                          className="space-y-2 text-sm leading-6"
-                          components={{
-                            h1: ({ children }) => (
-                              <h1 className="text-base font-semibold">
-                                {children}
-                              </h1>
-                            ),
-                            h2: ({ children }) => (
-                              <h2 className="text-sm font-semibold">
-                                {children}
-                              </h2>
-                            ),
-                            h3: ({ children }) => (
-                              <h3 className="text-sm font-semibold">
-                                {children}
-                              </h3>
-                            ),
-                            p: ({ children }) => (
-                              <p className="whitespace-pre-wrap">{children}</p>
-                            ),
-                            pre: ({ children }) => (
-                              <pre className="overflow-x-auto rounded bg-black/5 p-3 text-xs">
-                                {children}
-                              </pre>
-                            ),
-                            code: ({ children, className }) => (
-                              <code
-                                className={
-                                  className
-                                    ? "font-mono text-xs"
-                                    : "rounded bg-black/5 px-1 py-0.5 font-mono text-xs"
-                                }
-                              >
-                                {children}
-                              </code>
-                            ),
-                            strong: ({ children }) => (
-                              <strong className="font-semibold">
-                                {children}
-                              </strong>
-                            ),
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      )}
-                    </div>
-                    <span className="text-xs text-chat-muted">
-                      {formatTime(message.createdAt)}
-                    </span>
-                  </div>
-                );
-              })
+                      <div
+                        className={`sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm max-w-full ${
+                          isUser
+                            ? "bg-chat-ink text-white"
+                            : isError
+                              ? "border border-red-200 bg-red-50 text-red-700"
+                              : "bg-chat-bubble text-chat-ink"
+                        }`}
+                      >
+                        {message.role === "assistant" &&
+                        hasMarkdown(message.content) ? (
+                          <ReactMarkdown
+                            className="space-y-2 text-sm leading-6"
+                            components={{
+                              h1: ({ children }) => (
+                                <h1 className="text-base font-semibold">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className="text-sm font-semibold">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-sm font-semibold">
+                                  {children}
+                                </h3>
+                              ),
+                              p: ({ children }) => (
+                                <p className="whitespace-pre-wrap">
+                                  {children}
+                                </p>
+                              ),
+                              pre: ({ children }) => (
+                                <pre className="overflow-x-auto rounded bg-black/5 p-3 text-xs">
+                                  {children}
+                                </pre>
+                              ),
+                              code: ({ children, className }) => (
+                                <code
+                                  className={
+                                    className
+                                      ? "font-mono text-xs"
+                                      : "rounded bg-black/5 px-1 py-0.5 font-mono text-xs"
+                                  }
+                                >
+                                  {children}
+                                </code>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="font-semibold">
+                                  {children}
+                                </strong>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        ) : (
+                          <p className="whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-chat-muted">
+                        {formatTime(message.createdAt)}
+                      </span>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             )}
 
             {isLoading ? (
@@ -447,7 +526,7 @@ export default function Home() {
               Press Enter to send, Shift + Enter for a new line.
             </p>
           </form>
-        </section>
+        </motion.section>
       </main>
     </div>
   );

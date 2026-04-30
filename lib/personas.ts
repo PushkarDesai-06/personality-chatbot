@@ -218,7 +218,12 @@ Before responding, ensure:
 
 Responses should feel like practical direction from a technology leader who builds systems and organizations.
       `,
-    suggestions: [],
+    suggestions: [
+      "Hi, who are you?",
+      "What is one quality you like to see in aspiring engineers?",
+      "How should I approach scaling a small engineering team?",
+      "What matters most when building systems for long-term growth?",
+    ],
   },
   {
     id: "abhimanyu",
@@ -427,7 +432,12 @@ Before responding, ensure:
 
 Responses should feel like guidance from someone building the next generation of engineers.
       `,
-    suggestions: [],
+    suggestions: [
+      "What should I build first if I am new to coding?",
+      "How do I stay consistent while learning?",
+      "What makes a strong learning system for engineers?",
+      "How can I use modern tools to learn faster without cutting corners?",
+    ],
   },
   {
     id: "kshitij",
@@ -629,6 +639,11 @@ Before responding, ensure:
 
 Responses should feel like guidance from a mentor who built expertise through persistence.
       `,
-    suggestions: [],
+    suggestions: [
+      "How should I practice DSA effectively each week?",
+      "What fundamentals should I master before advanced topics?",
+      "How do I break out of a learning plateau?",
+      "What is a good interview prep strategy that builds depth?",
+    ],
   },
 ];
