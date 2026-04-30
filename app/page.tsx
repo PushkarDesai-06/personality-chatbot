@@ -44,8 +44,24 @@ export default function Home() {
   } as const;
 
   const suggestionItemMotion = {
-    hidden: { opacity: 0, y: 4 },
-    show: { opacity: 1, y: 0 },
+    hidden: { opacity: 0 },
+    show: { opacity: 1 },
+  } as const;
+
+  const personaMenuMotion = {
+    hidden: { opacity: 0, scale: 0.98 },
+    show: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: { duration: 0.18, ease: "easeOut", staggerChildren: 0.08 },
+    },
+    exit: { opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.15 } },
+  } as const;
+
+  const personaItemMotion = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1 },
   } as const;
 
   const activePersona = useMemo(
@@ -114,6 +130,12 @@ export default function Home() {
 
   const handleClearChat = () => {
     if (typeof window === "undefined") return;
+    if (messages.length > 0) {
+      const confirmed = window.confirm(
+        "Clear this chat? This will remove the conversation for this persona.",
+      );
+      if (!confirmed) return;
+    }
     window.localStorage.removeItem(storageKey(activePersonaId));
     setMessages([]);
     setInput("");
@@ -242,27 +264,36 @@ export default function Home() {
                   <path d="M6 9l6 6 6-6" />
                 </svg>
               </button>
-              {isPersonaMenuOpen ? (
-                <div className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg">
-                  {personas.map((persona) => {
-                    const isActive = persona.id === activePersonaId;
-                    return (
-                      <button
-                        key={persona.id}
-                        type="button"
-                        onClick={() => handlePersonaChange(persona.id)}
-                        className={`flex w-full items-center justify-between rounded-full border px-4 py-2 text-base transition ${
-                          isActive
-                            ? "border-chat-ink bg-chat-ink text-white"
-                            : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
-                        }`}
-                      >
-                        {persona.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
+              <AnimatePresence>
+                {isPersonaMenuOpen ? (
+                  <motion.div
+                    className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg"
+                    variants={personaMenuMotion}
+                    initial="hidden"
+                    animate="show"
+                    exit="exit"
+                  >
+                    {personas.map((persona) => {
+                      const isActive = persona.id === activePersonaId;
+                      return (
+                        <motion.button
+                          key={persona.id}
+                          type="button"
+                          onClick={() => handlePersonaChange(persona.id)}
+                          className={`flex  w-full items-center justify-between rounded-full border px-4 py-2 text-base transition ${
+                            isActive
+                              ? "border-chat-ink bg-chat-ink text-white"
+                              : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
+                          }`}
+                          variants={personaItemMotion}
+                        >
+                          {persona.name}
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
           <button
