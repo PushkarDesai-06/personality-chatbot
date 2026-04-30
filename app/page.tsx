@@ -306,7 +306,7 @@ export default function Home() {
                 <AnimatePresence>
                   {isPersonaMenuOpen ? (
                     <motion.div
-                      className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg"
+                      className="absolute left-0 top-full z-20 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg"
                       variants={personaMenuMotion}
                       initial="hidden"
                       animate="show"
