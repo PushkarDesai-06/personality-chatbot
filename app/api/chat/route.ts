@@ -8,7 +8,10 @@ type ClientMessage = {
 type ChatRequestBody = {
   personaId?: string;
   messages?: ClientMessage[];
+  model?: "gemini-2.5-flash" | "gemini-3-flash-preview";
 };
+
+const allowedModels = new Set(["gemini-2.5-flash", "gemini-3-flash-preview"]);
 
 const classifyReason = (message: string | undefined, status: number) => {
   const text = message?.toLowerCase() ?? "";
@@ -107,8 +110,10 @@ export async function POST(request: Request) {
     };
   }
 
-  //! MODEL ID HERE
-  const model = "gemini-2.5-flash";
+  const model =
+    body.model && allowedModels.has(body.model)
+      ? body.model
+      : "gemini-2.5-flash";
   const endpoint =
     "https://generativelanguage.googleapis.com/v1beta/models/" +
     `${model}:generateContent?key=${apiKey}`;

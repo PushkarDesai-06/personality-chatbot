@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { personas } from "@/lib/personas";
 import ReactMarkdown from "react-markdown";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,6 +13,8 @@ type ChatMessage = {
   content: string;
   createdAt: string;
 };
+
+type ModelId = "gemini-2.5-flash" | "gemini-3-flash-preview";
 
 const storageKey = (personaId: string) => `persona-chat:${personaId}`;
 
@@ -34,6 +37,12 @@ export default function Home() {
   const personaMenuRef = useRef<HTMLDivElement | null>(null);
   const [isPersonaMenuOpen, setIsPersonaMenuOpen] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true);
+  const [modelId, setModelId] = useState<ModelId>("gemini-2.5-flash");
+
+  const modelOptions: Array<{ id: ModelId; label: string }> = [
+    { id: "gemini-2.5-flash", label: "2.5" },
+    { id: "gemini-3-flash-preview", label: "3" },
+  ];
 
   const suggestionsContainerMotion = {
     hidden: { opacity: 0 },
@@ -46,6 +55,32 @@ export default function Home() {
   const suggestionItemMotion = {
     hidden: { opacity: 0 },
     show: { opacity: 1 },
+  } as const;
+
+  const messageListMotion = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05, delayChildren: 0.05 },
+    },
+    exit: {
+      opacity: 0,
+      transition: { staggerChildren: 0.04, staggerDirection: -1 },
+    },
+  } as const;
+
+  const messageItemMotion = {
+    hidden: { opacity: 0, y: 8 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.2, ease: "easeOut" },
+    },
+    exit: {
+      opacity: 0,
+      y: 8,
+      transition: { duration: 0.15, ease: "easeIn" },
+    },
   } as const;
 
   const personaMenuMotion = {
@@ -163,6 +198,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           personaId: activePersona.id,
+          model: modelId,
           messages: nextMessages.map(({ role, content }) => ({
             role,
             content,
@@ -239,68 +275,114 @@ export default function Home() {
             <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
               Active persona
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight truncate">
               {activePersona.name}
             </h1>
-            <div className="relative mt-3" ref={personaMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIsPersonaMenuOpen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-chat-ink bg-chat-ink px-4 py-2 text-base text-white transition"
-                aria-haspopup="listbox"
-                aria-expanded={isPersonaMenuOpen}
-              >
-                {activePersona.name}
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            <div className="mt-3 flex items-center justify-between gap-2 sm:gap-8">
+              <div className="relative flex" ref={personaMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsPersonaMenuOpen((prev) => !prev)}
+                  className="flex justify-between items-center gap-2 rounded-full border border-chat-ink bg-chat-ink min-w-48 px-4 py-2 text-base text-white transition"
+                  aria-haspopup="listbox"
+                  aria-expanded={isPersonaMenuOpen}
                 >
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-              <AnimatePresence>
-                {isPersonaMenuOpen ? (
-                  <motion.div
-                    className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg"
-                    variants={personaMenuMotion}
-                    initial="hidden"
-                    animate="show"
-                    exit="exit"
-                  >
-                    {personas.map((persona) => {
-                      const isActive = persona.id === activePersonaId;
-                      return (
-                        <motion.button
-                          key={persona.id}
-                          type="button"
-                          onClick={() => handlePersonaChange(persona.id)}
-                          className={`flex  w-full items-center justify-between rounded-full border px-4 py-2 text-base transition ${
-                            isActive
-                              ? "border-chat-ink bg-chat-ink text-white"
-                              : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
+                  <span className="truncate">{activePersona.name}</span>
+                  <div className="">
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {isPersonaMenuOpen ? (
+                    <motion.div
+                      className="absolute left-0 z-10 mt-2 flex w-56 flex-col gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-lg"
+                      variants={personaMenuMotion}
+                      initial="hidden"
+                      animate="show"
+                      exit="exit"
+                    >
+                      {personas.map((persona) => {
+                        const isActive = persona.id === activePersonaId;
+                        return (
+                          <motion.button
+                            key={persona.id}
+                            type="button"
+                            onClick={() => handlePersonaChange(persona.id)}
+                            className={`flex w-full items-center justify-between rounded-full border px-4 py-2 text-base transition ${
+                              isActive
+                                ? "border-chat-ink bg-chat-ink text-white"
+                                : "border-black/10 bg-white text-chat-muted hover:border-black/30 hover:text-chat-ink"
+                            }`}
+                            variants={personaItemMotion}
+                          >
+                            {persona.name}
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="sr-only">Gemini</span>
+                <Image
+                  src="/gemini_icon.svg"
+                  alt="Gemini"
+                  width={20}
+                  height={20}
+                  className="h-5 w-5"
+                />
+                <div className="relative flex rounded-full border border-chat-ink bg-chat-ink p-1 shadow-sm">
+                  {modelOptions.map((option) => {
+                    const isActive = option.id === modelId;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setModelId(option.id)}
+                        className="relative flex items-center justify-center rounded-full px-4 py-1.5 text-sm font-semibold"
+                      >
+                        {isActive ? (
+                          <motion.span
+                            layoutId="model-toggle"
+                            className="absolute inset-0 rounded-full bg-white"
+                            transition={{
+                              type: "spring",
+                              stiffness: 450,
+                              damping: 35,
+                            }}
+                          />
+                        ) : null}
+                        <span
+                          className={`relative z-10 ${
+                            isActive ? "text-chat-ink" : "text-white"
                           }`}
-                          variants={personaItemMotion}
                         >
-                          {persona.name}
-                        </motion.button>
-                      );
-                    })}
-                  </motion.div>
-                ) : null}
-              </AnimatePresence>
+                          {option.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
           <button
             type="button"
             onClick={handleClearChat}
             disabled={messages.length === 0 || isLoading}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-red/10 bg-red-200 text-red-600 transition hover:border-red-700 hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 absolute right-6 top-5 sm:static sm:ml-auto"
+            className="absolute right-6 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-red/10 bg-red-200 text-red-600 transition hover:border-red-700 hover:bg-red-100 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:static sm:ml-auto"
           >
             <span className="sr-only">Clear chat</span>
             <svg
@@ -407,93 +489,99 @@ export default function Home() {
                 Start a conversation with {activePersona.name}.
               </div>
             ) : (
-              <AnimatePresence initial={false}>
-                {messages.map((message) => {
-                  const isUser = message.role === "user";
-                  const isError = message.role === "error";
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activePersonaId}
+                  className="space-y-6"
+                  variants={messageListMotion}
+                  initial="hidden"
+                  animate="show"
+                  exit="exit"
+                >
+                  {messages.map((message) => {
+                    const isUser = message.role === "user";
+                    const isError = message.role === "error";
 
-                  return (
-                    <motion.div
-                      key={message.id}
-                      className={`flex flex-col gap-1 ${
-                        isUser ? "items-end" : "items-start"
-                      }`}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                    >
-                      <div
-                        className={`sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm max-w-full ${
-                          isUser
-                            ? "bg-chat-ink text-white"
-                            : isError
-                              ? "border border-red-200 bg-red-50 text-red-700"
-                              : "bg-chat-bubble text-chat-ink"
+                    return (
+                      <motion.div
+                        key={message.id}
+                        className={`flex flex-col gap-1 ${
+                          isUser ? "items-end" : "items-start"
                         }`}
+                        variants={messageItemMotion}
                       >
-                        {message.role === "assistant" &&
-                        hasMarkdown(message.content) ? (
-                          <ReactMarkdown
-                            className="space-y-2 text-sm leading-6"
-                            components={{
-                              h1: ({ children }) => (
-                                <h1 className="text-base font-semibold">
-                                  {children}
-                                </h1>
-                              ),
-                              h2: ({ children }) => (
-                                <h2 className="text-sm font-semibold">
-                                  {children}
-                                </h2>
-                              ),
-                              h3: ({ children }) => (
-                                <h3 className="text-sm font-semibold">
-                                  {children}
-                                </h3>
-                              ),
-                              p: ({ children }) => (
-                                <p className="whitespace-pre-wrap">
-                                  {children}
-                                </p>
-                              ),
-                              pre: ({ children }) => (
-                                <pre className="overflow-x-auto rounded bg-black/5 p-3 text-xs">
-                                  {children}
-                                </pre>
-                              ),
-                              code: ({ children, className }) => (
-                                <code
-                                  className={
-                                    className
-                                      ? "font-mono text-xs"
-                                      : "rounded bg-black/5 px-1 py-0.5 font-mono text-xs"
-                                  }
-                                >
-                                  {children}
-                                </code>
-                              ),
-                              strong: ({ children }) => (
-                                <strong className="font-semibold">
-                                  {children}
-                                </strong>
-                              ),
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        ) : (
-                          <p className="whitespace-pre-wrap">
-                            {message.content}
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-xs text-chat-muted">
-                        {formatTime(message.createdAt)}
-                      </span>
-                    </motion.div>
-                  );
-                })}
+                        <div
+                          className={`sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm max-w-full ${
+                            isUser
+                              ? "bg-chat-ink text-white"
+                              : isError
+                                ? "border border-red-200 bg-red-50 text-red-700"
+                                : "bg-chat-bubble text-chat-ink"
+                          }`}
+                        >
+                          {message.role === "assistant" &&
+                          hasMarkdown(message.content) ? (
+                            <ReactMarkdown
+                              className="space-y-2 text-sm leading-6"
+                              components={{
+                                h1: ({ children }) => (
+                                  <h1 className="text-base font-semibold">
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-sm font-semibold">
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-sm font-semibold">
+                                    {children}
+                                  </h3>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="whitespace-pre-wrap">
+                                    {children}
+                                  </p>
+                                ),
+                                pre: ({ children }) => (
+                                  <pre className="overflow-x-auto rounded bg-black/5 p-3 text-xs">
+                                    {children}
+                                  </pre>
+                                ),
+                                code: ({ children, className }) => (
+                                  <code
+                                    className={
+                                      className
+                                        ? "font-mono text-xs"
+                                        : "rounded bg-black/5 px-1 py-0.5 font-mono text-xs"
+                                    }
+                                  >
+                                    {children}
+                                  </code>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold">
+                                    {children}
+                                  </strong>
+                                ),
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          ) : (
+                            <p className="whitespace-pre-wrap">
+                              {message.content}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-chat-muted">
+                          {formatTime(message.createdAt)}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
               </AnimatePresence>
             )}
 
