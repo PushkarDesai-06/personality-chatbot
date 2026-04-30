@@ -192,7 +192,7 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-transparent text-chat-ink">
       <header className="border-b border-black/10 bg-white/70 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between relative">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between relative">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
               Active persona
@@ -272,7 +272,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 px-6 pb-10 pt-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-0 pb-10 pt-6 sm:px-6">
         {/* <section className="rounded-3xl border border-black/10 bg-white/80 px-5 py-4">
           <p className="text-xs uppercase tracking-[0.2em] text-chat-muted">
             Suggestions
@@ -297,7 +297,7 @@ export default function Home() {
           )}
         </section> */}
 
-        <section className="flex min-h-[55vh] flex-1 flex-col rounded-3xl border border-black/10 bg-white/80">
+        <section className="flex min-h-[55vh] w-full flex-1 flex-col rounded-none border border-black/10 bg-white/80 sm:rounded-3xl">
           <div
             ref={transcriptRef}
             className="flex-1 space-y-6 overflow-y-auto px-5 py-6"
@@ -319,7 +319,7 @@ export default function Home() {
                     }`}
                   >
                     <div
-                      className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
+                      className={`sm:max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm max-w-full ${
                         isUser
                           ? "bg-chat-ink text-white"
                           : isError
